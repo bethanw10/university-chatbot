@@ -35,13 +35,12 @@ def get_request():
     print("Request:")
     print(json.dumps(req, indent=4))
 
-    res = make_webhook_result(req)
-
-    res = json.dumps(res, indent=4)
-    print(res)
-    r = make_response(res)
-    r.headers['Content-Type'] = 'application/json'
-    return r
+    # res = make_webhook_result(req)
+    # res = json.dumps(res, indent=4)
+    # print(res)
+    # r = make_response(res)
+    # r.headers['Content-Type'] = 'application/json'
+    # return r
 
 
 def make_webhook_result(req):
