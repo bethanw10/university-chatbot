@@ -78,8 +78,9 @@ def timetabling_get_semester(module_code):
 
 def get_semester_by_module(module_code):
     db = sqlite3.connect('data/db.sqlite')
+
     cursor = db.cursor()
-    cursor.execute("SELECT semester from module where code = '?'", [module_code.upper()])
+    cursor.execute("SELECT semester FROM module WHERE code = ?", [module_code.upper()])
 
     result = cursor.fetchone()
 
