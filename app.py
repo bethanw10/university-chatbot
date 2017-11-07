@@ -35,13 +35,6 @@ def get_request():
     print("Request:")
     print(json.dumps(req, indent=4))
 
-    # res = make_webhook_result(req)
-    # res = json.dumps(res, indent=4)
-    # print(res)
-    # r = make_response(res)
-    # r.headers['Content-Type'] = 'application/json'
-    # return r
-
 
 def make_webhook_result(req):
     action = req.get("result").get("action")
@@ -71,9 +64,9 @@ def timetabling_get_semester(module_code):
     if semester is None:
         return "I couldn't find any information for " + module_code
     elif semester == "Year Long":
-        return "Module " + module_code + " is a year long module."
+        return "Module " + module_code.upper() + " is a year long module."
     else:
-        return "Module " + module_code + " is in " + semester.lower()
+        return "Module " + module_code.upper() + " is in " + semester.lower()
 
 
 def get_semester_by_module(module_code):
