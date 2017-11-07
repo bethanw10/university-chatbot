@@ -1,7 +1,6 @@
 {
-  "name": "API.AI Shipping Costs Webhook",
-  "description": "API.AI Shipping Costs Webhook Sapmple",
-  "repository": "https://github.com/svet4/shipping-costs-sample",
-  "logo": "http://xvir.github.io/img/apiai.png",
+  "name": "API.AI University Chatbot",
+  "description": "Prootype chatbot service for university students.",
+  "repository": "https://github.com/bethanw10/university-chatbot.git",
   "keywords": ["api.ai", "natural language"]
 }
