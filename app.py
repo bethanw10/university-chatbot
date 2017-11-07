@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
 import json
-import os
-import sqlite3
 
 from flask import Flask
 from flask import make_response
 from flask import request
 
+from university_chatbot import *
+
 # Flask app should start in global layout
+
 app = Flask(__name__)
 
 
@@ -43,6 +44,18 @@ def make_webhook_result(req):
         module_code = req.get("result").get("parameters").get('module')
         speech = timetabling_get_semester(module_code)
 
+    elif action == 'timetabling.next_activity_module':
+        module_code = req.get("result").get("parameters").get('module')
+        activity = req.get("result").get("parameters").get('activity')
+
+        speech = timetabling_get_next_activity_by_module(module_code, activity)
+
+    elif action == 'timetabling.next_activity_course':
+        course = req.get("result").get("parameters").get('course')
+        activity = req.get("result").get("parameters").get('activity')
+
+        speech = timetabling_get_next_activity_by_course(course, activity)
+
     else:
         speech = action
         for keys, values in req.get("result").get("parameters").items():
@@ -55,32 +68,96 @@ def make_webhook_result(req):
     return {
         "speech": speech,
         "displayText": speech,
-        "source": "apiai-university-chatbot"
+        "source": "apiai-university_chatbot"
     }
 
 
 def timetabling_get_semester(module_code):
     semester = get_semester_by_module(module_code)
     if semester is None:
-        return "I couldn't find any information for " + module_code
+        return "I couldn't find any information for " + module_code.upper()
     elif semester == "Year Long":
         return "Module " + module_code.upper() + " is a year long module."
     else:
         return "Module " + module_code.upper() + " is in " + semester.lower()
 
 
-def get_semester_by_module(module_code):
-    db = sqlite3.connect('data/db.sqlite')
+def timetabling_get_next_activity_by_module(module_code, activity):
+    if activity is '':
+        timetable, activity_date = get_next_activity_for_module(module_code)
+    else:
+        timetable, activity_date = get_next_activity_for_module(module_code, activity=activity)
 
-    cursor = db.cursor()
-    cursor.execute("SELECT semester FROM module WHERE code = ?", [module_code.upper()])
+    # TODO specify whether the module doesn't exist or if there's no more activities
+    # & only reply with information that is there
+    if timetable is None:
+        if activity is '':
+            return module_code + "doesn't have any else scheduled for the rest of the year"
+        else:
+            return "There aren't any more " + activity + "s" + " for " + module_code.upper()
 
-    result = cursor.fetchone()
+    else:
+        if activity:
+            response = "The next " + activity + " for " + module_code + " is "
 
-    if result is None:
-        return None
+        else:
+            response = "Next for " + module_code + " is the " + timetable.activity.lower()
 
-    return result[0]
+        if activity_date.date() == datetime.today().date():
+            response += " today "
+        elif activity_date.date() == (datetime.today() + timedelta(days=1)).date():
+            response += " tomorrow "
+        else:
+            response += " on the " + activity_date.strftime('%A %d %b %Y')
+
+        response += " from " + timetable.start + " - " + timetable.finishes + \
+                    " in room " + timetable.room
+
+        if timetable.lecturer:
+            response += " with " + timetable.lecturer + "."
+        else:
+            response += "."
+
+        return response
+
+
+def timetabling_get_next_activity_by_course(course, activity):
+    if activity is '':
+        timetable, activity_date = get_next_activity_for_course(course)
+    else:
+        timetable, activity_date = get_next_activity_for_course(course, activity=activity)
+
+    # TODO specify whether the course doesn't exist or if there's no more activities
+    # & only reply with information that is there
+    if timetable is None:
+        if activity is '':
+            return course + "doesn't have any else scheduled for the rest of the year"
+        else:
+            return "There aren't any more " + activity + "s" + " for " + course
+
+    else:
+        if activity:
+            response = "The next " + activity + " for " + course + " is "
+
+        else:
+            response = "Next for " + course + " is the " + timetable.activity.lower()
+
+        if activity_date.date() == datetime.today().date():
+            response += " today "
+        elif activity_date.date() == (datetime.today() + timedelta(days=1)).date():
+            response += " tomorrow "
+        else:
+            response += " on the " + activity_date.strftime('%A %d %b %Y')
+
+        response += " from " + timetable.start + " - " + timetable.finishes + \
+                    " in room " + timetable.room
+
+        if timetable.lecturer:
+            response += " with " + timetable.lecturer + "."
+        else:
+            response += "."
+
+        return response
 
 
 if __name__ == '__main__':
