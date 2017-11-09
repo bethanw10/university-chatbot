@@ -57,6 +57,12 @@ def make_webhook_result(req):
 
         speech = timetabling_get_next_activity_by_course(course, year, activity)
 
+    elif action == 'timetabling.get_course_modules':
+        course = req.get("result").get("parameters").get('course')
+        year = req.get("result").get("parameters").get('year')
+
+        speech = timetabling_get_modules_by_course(course, year)
+
     else:
         speech = action
         for keys, values in req.get("result").get("parameters").items():
@@ -158,12 +164,23 @@ def timetabling_get_next_activity_by_course(course, year, activity):
         response += " from " + timetable.start + " - " + timetable.finishes + \
                     " in room " + timetable.room
 
-        if timetable.lecturer:
+        if timetable.lecturer != "" or timetable.lecturer != "-":
             response += " with " + timetable.lecturer + "."
         else:
             response += "."
 
         return response
+
+
+def timetabling_get_modules_by_course(course, year):
+    modules = get_modules_by_course(course, year)
+
+    response = "The modules for " + course + " are:"
+
+    for module in modules:
+        response += "\t" + module.code + " " + module.name + "\n"
+
+    return response
 
 
 if __name__ == '__main__':
