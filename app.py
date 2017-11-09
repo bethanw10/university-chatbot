@@ -53,8 +53,9 @@ def make_webhook_result(req):
     elif action == 'timetabling.next_activity_course':
         course = req.get("result").get("parameters").get('course')
         activity = req.get("result").get("parameters").get('activity')
+        year = req.get("result").get("parameters").get('year')
 
-        speech = timetabling_get_next_activity_by_course(course, activity)
+        speech = timetabling_get_next_activity_by_course(course, year, activity)
 
     else:
         speech = action
@@ -90,11 +91,14 @@ def timetabling_get_next_activity_by_module(module_code, activity):
 
     # TODO specify whether the module doesn't exist or if there's no more activities
     # & only reply with information that is there
+
+    module_code = module_code.upper()
+
     if timetable is None:
         if activity is '':
-            return module_code + "doesn't have any else scheduled for the rest of the year"
+            return module_code + " doesn't have any else scheduled for the rest of the year"
         else:
-            return "There aren't any more " + activity + "s" + " for " + module_code.upper()
+            return "There aren't any more " + activity + "s" + " for " + module_code
 
     else:
         if activity:
@@ -121,23 +125,23 @@ def timetabling_get_next_activity_by_module(module_code, activity):
         return response
 
 
-def timetabling_get_next_activity_by_course(course, activity):
+def timetabling_get_next_activity_by_course(course, year, activity):
     if activity is '':
-        timetable, activity_date = get_next_activity_for_course(course)
+        timetable, activity_date = get_next_activity_for_course(course, year)
     else:
-        timetable, activity_date = get_next_activity_for_course(course, activity=activity)
+        timetable, activity_date = get_next_activity_for_course(course, year, activity=activity)
 
     # TODO specify whether the course doesn't exist or if there's no more activities
     # & only reply with information that is there
     if timetable is None:
         if activity is '':
-            return course + "doesn't have any else scheduled for the rest of the year"
+            return course + " doesn't have any else scheduled for the rest of the year"
         else:
             return "There aren't any more " + activity + "s" + " for " + course
 
     else:
         if activity:
-            response = "The next " + activity + " for " + course + " is "
+            response = "The next " + activity + " for " + course + " is"
 
         else:
             response = "Next for " + course + " is the " + timetable.activity.lower()
@@ -148,6 +152,8 @@ def timetabling_get_next_activity_by_course(course, activity):
             response += " tomorrow "
         else:
             response += " on the " + activity_date.strftime('%A %d %b %Y')
+
+        response += " for " + timetable.module.name
 
         response += " from " + timetable.start + " - " + timetable.finishes + \
                     " in room " + timetable.room
