@@ -2,6 +2,7 @@
 # TODO what date is week 12 - account for holidays
 # Format date correctly
 import json
+import re
 
 from flask import Flask
 from flask import make_response
@@ -12,7 +13,6 @@ from university_chatbot import *
 week_one = date(2017, 9, 25)
 
 # Flask app should start in global layout
-
 app = Flask(__name__)
 
 
@@ -44,11 +44,12 @@ def make_webhook_result(req):
     action = req.get("result").get("action")
 
     if action == 'timetabling.semester':
-        module_code = req.get("result").get("parameters").get('module').strip()
+        module_code = req.get("result").get("parameters").get('module')
+
         speech = timetabling_get_semester(module_code)
 
     elif action == 'timetabling.next_activity_module':
-        module_code = req.get("result").get("parameters").get('module').strip()
+        module_code = req.get("result").get("parameters").get('module')
         activity = req.get("result").get("parameters").get('activity').strip()
 
         speech = timetabling_get_next_activity_by_module(module_code, activity)
@@ -87,7 +88,7 @@ def make_webhook_result(req):
 
         print("Response:")
         print(speech)
-        speech = "Message type: " + speech
+        speech = "Message type: " + speech + "\n Response: " + req.get("result").get("fulfillment").get("speech")
 
     return {
         "speech": speech,
@@ -96,7 +97,15 @@ def make_webhook_result(req):
     }
 
 
+# TODO add module name
 def timetabling_get_semester(module_code):
+    pattern = re.compile("\d\w{2}\d{3}")
+    result = pattern.search(module_code)
+    if result is None:
+        return "Sorry but I couldn't find any information for that module"
+
+    module_code = result.group()
+
     semester = get_semester_by_module(module_code)
     if semester is None:
         return "I couldn't find any information for " + module_code.upper()
@@ -107,6 +116,13 @@ def timetabling_get_semester(module_code):
 
 
 def timetabling_get_next_activity_by_module(module_code, activity):
+    pattern = re.compile("\d\w{2}\d{3}")
+    result = pattern.search(module_code)
+    if result is None:
+        return "Sorry but I couldn't find any information for that module"
+
+    module_code = result.group()
+
     if activity is '':
         timetable, activity_date = get_next_activity_for_module(module_code)
     else:
@@ -199,8 +215,13 @@ def timetabling_get_modules_by_course(course, year):
     return response
 
 
+# 1 - 39
 def timetabling_get_week_date(week_number):
     start_date = get_date_by_week_number(int(week_number))
+
+    if not 1 <= int(week_number) <= 39:
+        return "There isn't a week " + week_number + ", the weeks start at 1 and end at 39"
+
     return "Week " + week_number + " starts on " + start_date.strftime('%d %b %Y')
 
 
