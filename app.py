@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-
+# TODO what date is week 12 - account for holidays
+# Format date correctly
 import json
 
 from flask import Flask
@@ -7,6 +8,8 @@ from flask import make_response
 from flask import request
 
 from university_chatbot import *
+
+week_one = date(2017, 9, 25)
 
 # Flask app should start in global layout
 
@@ -41,27 +44,41 @@ def make_webhook_result(req):
     action = req.get("result").get("action")
 
     if action == 'timetabling.semester':
-        module_code = req.get("result").get("parameters").get('module')
+        module_code = req.get("result").get("parameters").get('module').strip()
         speech = timetabling_get_semester(module_code)
 
     elif action == 'timetabling.next_activity_module':
-        module_code = req.get("result").get("parameters").get('module')
-        activity = req.get("result").get("parameters").get('activity')
+        module_code = req.get("result").get("parameters").get('module').strip()
+        activity = req.get("result").get("parameters").get('activity').strip()
 
         speech = timetabling_get_next_activity_by_module(module_code, activity)
 
     elif action == 'timetabling.next_activity_course':
-        course = req.get("result").get("parameters").get('course')
-        activity = req.get("result").get("parameters").get('activity')
-        year = req.get("result").get("parameters").get('year')
+        course = req.get("result").get("parameters").get('course').strip()
+        activity = req.get("result").get("parameters").get('activity').strip()
+        year = req.get("result").get("parameters").get('year').strip()
 
         speech = timetabling_get_next_activity_by_course(course, year, activity)
 
     elif action == 'timetabling.get_course_modules':
-        course = req.get("result").get("parameters").get('course')
-        year = req.get("result").get("parameters").get('year')
+        course = req.get("result").get("parameters").get('course').strip()
+        year = req.get("result").get("parameters").get('year').strip()
 
         speech = timetabling_get_modules_by_course(course, year)
+
+    elif action == 'timetabling.week_start':
+        week_number = req.get("result").get("parameters").get("week").strip()
+
+        speech = timetabling_get_week_date(week_number)
+
+    elif action == 'input.unknown':
+        media_type = req.get("result").get("resolvedQuery")
+
+        # Send a like emoji in response to any images or like events
+        if media_type == "FACEBOOK_MEDIA":
+            speech = "👍"
+        else:
+            speech = req.get("result").get("fulfillment").get("speech")
 
     else:
         speech = action
@@ -84,9 +101,9 @@ def timetabling_get_semester(module_code):
     if semester is None:
         return "I couldn't find any information for " + module_code.upper()
     elif semester == "Year Long":
-        return "Module " + module_code.upper() + " is a year long module."
+        return module_code.upper() + " is a year long module."
     else:
-        return "Module " + module_code.upper() + " is in " + semester.lower()
+        return module_code.upper() + " is in " + semester.lower()
 
 
 def timetabling_get_next_activity_by_module(module_code, activity):
@@ -138,7 +155,6 @@ def timetabling_get_next_activity_by_course(course, year, activity):
         timetable, activity_date = get_next_activity_for_course(course, year, activity=activity)
 
     # TODO specify whether the course doesn't exist or if there's no more activities
-    # & only reply with information that is there
     if timetable is None:
         if activity is '':
             return course + " doesn't have any else scheduled for the rest of the year"
@@ -164,7 +180,7 @@ def timetabling_get_next_activity_by_course(course, year, activity):
         response += " from " + timetable.start + " - " + timetable.finishes + \
                     " in room " + timetable.room
 
-        if timetable.lecturer != "" or timetable.lecturer != "-":
+        if timetable.lecturer != "" and timetable.lecturer != "-":
             response += " with " + timetable.lecturer + "."
         else:
             response += "."
@@ -175,12 +191,29 @@ def timetabling_get_next_activity_by_course(course, year, activity):
 def timetabling_get_modules_by_course(course, year):
     modules = get_modules_by_course(course, year)
 
-    response = "The modules for " + course + " are:"
+    response = "The modules for " + course + " are: \n"
 
     for module in modules:
-        response += "\t" + module.code + " " + module.name + "\n"
+        response += "" + module.code + " " + module.name + "\n"
 
     return response
+
+
+def timetabling_get_week_date(week_number):
+    start_date = get_date_by_week_number(int(week_number))
+    return "Week " + week_number + " starts on " + start_date.strftime('%d %b %Y')
+
+
+def get_date_by_week_number(week_number, day="Monday"):
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+    if day not in days:
+        raise ValueError(day + "is not a valid day of the week")
+
+    day_number = days.index(day)
+
+    start_date = week_one + timedelta(weeks=week_number - 1, days=day_number)
+    return start_date
 
 
 if __name__ == '__main__':
