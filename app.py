@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# TODO what date is week 12 - account for holidays
+# TODO what date is week 12 - account for holidays?
 # Format date correctly
 import json
 import re
@@ -71,6 +71,11 @@ def make_webhook_result(req):
         week_number = req.get("result").get("parameters").get("week").strip()
 
         speech = timetabling_get_week_date(week_number)
+
+    elif action == 'timetabling.get_week_number':
+        date = req.get("result").get("parameters").get("date").strip()
+
+        speech = timetabling_get_week(date)
 
     elif action == 'input.unknown':
         media_type = req.get("result").get("resolvedQuery")
@@ -151,7 +156,7 @@ def timetabling_get_next_activity_by_module(module_code, activity):
         elif activity_date.date() == (datetime.today() + timedelta(days=1)).date():
             response += " tomorrow "
         else:
-            response += " on the " + activity_date.strftime('%A %d %b %Y')
+            response += " on the " + ordinal_strftime(activity_date)
 
         response += " from " + timetable.start + " - " + timetable.finishes + \
                     " in room " + timetable.room
@@ -189,7 +194,7 @@ def timetabling_get_next_activity_by_course(course, year, activity):
         elif activity_date.date() == (datetime.today() + timedelta(days=1)).date():
             response += " tomorrow "
         else:
-            response += " on the " + activity_date.strftime('%A %d %b %Y')
+            response += " on the " + ordinal_strftime(activity_date)
 
         response += " for " + timetable.module.name
 
@@ -222,19 +227,11 @@ def timetabling_get_week_date(week_number):
     if not 1 <= int(week_number) <= 39:
         return "There isn't a week " + week_number + ", the weeks start at 1 and end at 39"
 
-    return "Week " + week_number + " starts on " + start_date.strftime('%d %b %Y')
+    return "Week " + week_number + " starts on " + ordinal_strftime(start_date)
 
 
-def get_date_by_week_number(week_number, day="Monday"):
-    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-
-    if day not in days:
-        raise ValueError(day + "is not a valid day of the week")
-
-    day_number = days.index(day)
-
-    start_date = week_one + timedelta(weeks=week_number - 1, days=day_number)
-    return start_date
+def timetabling_get_week(date):
+    return "The" + ordinal_strftime(date) + " is in week " + str(get_week_number(date))
 
 
 if __name__ == '__main__':
