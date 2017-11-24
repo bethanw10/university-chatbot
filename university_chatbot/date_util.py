@@ -31,6 +31,11 @@ def get_date_by_week_number(week_number, day="Monday"):
     return start_date
 
 
+def get_day_by_number(number):
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    return days[number]
+
+
 def get_week_number(for_date):
     if type(for_date) is str:
         for_date = datetime.strptime(for_date, '%Y-%m-%d').date()

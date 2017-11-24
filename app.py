@@ -61,6 +61,13 @@ def make_webhook_result(req):
 
         speech = timetabling_get_next_activity_by_course(course, year, activity)
 
+    elif action == 'timetabling.activities_for_date':
+        date = req.get("result").get("parameters").get('date')
+        course = req.get("result").get("parameters").get('course').strip()
+        year = req.get("result").get("parameters").get('year')
+
+        speech = timetabling_get_activities_on_date(course, date, year)
+
     elif action == 'timetabling.get_course_modules':
         course = req.get("result").get("parameters").get('course').strip()
         year = req.get("result").get("parameters").get('year').strip()
@@ -69,13 +76,20 @@ def make_webhook_result(req):
 
     elif action == 'timetabling.week_start':
         week_number = req.get("result").get("parameters").get("week").strip()
-
         speech = timetabling_get_week_date(week_number)
 
     elif action == 'timetabling.get_week_number':
-        date = req.get("result").get("parameters").get("date").strip()
+        for_date = req.get("result").get("parameters").get("date").strip()
+        speech = timetabling_get_week(for_date)
 
-        speech = timetabling_get_week(date)
+    elif action == 'timetabling.get_module_code':
+        module = req.get("result").get("parameters").get("module")
+        module_code = extract_module_code(module)
+
+        if module_code is None:
+            speech = module + "? I don't recognise that module sorry"
+        else:
+            speech = "It's " + module_code.upper()
 
     elif action == 'input.unknown':
         media_type = req.get("result").get("resolvedQuery")
@@ -87,13 +101,7 @@ def make_webhook_result(req):
             speech = req.get("result").get("fulfillment").get("speech")
 
     else:
-        speech = action
-        for keys, values in req.get("result").get("parameters").items():
-            speech += "  " + values
-
-        print("Response:")
-        print(speech)
-        speech = "Message type: " + speech + "\n Response: " + req.get("result").get("fulfillment").get("speech")
+        speech = req.get("result").get("fulfillment").get("speech")
 
     return {
         "speech": speech,
@@ -104,16 +112,13 @@ def make_webhook_result(req):
 
 # TODO add module name
 def timetabling_get_semester(module_code):
-    pattern = re.compile("\d\w{2}\d{3}")
-    result = pattern.search(module_code)
-    if result is None:
+    module_code = extract_module_code(module_code)
+    if module_code is None:
         return "Sorry but I couldn't find any information for that module"
-
-    module_code = result.group()
 
     semester = get_semester_by_module(module_code)
     if semester is None:
-        return "I couldn't find any information for " + module_code.upper()
+        return "Sorry, but I couldn't find any information for " + module_code.upper()
     elif semester == "Year Long":
         return module_code.upper() + " is a year long module."
     else:
@@ -121,12 +126,9 @@ def timetabling_get_semester(module_code):
 
 
 def timetabling_get_next_activity_by_module(module_code, activity):
-    pattern = re.compile("\d\w{2}\d{3}")
-    result = pattern.search(module_code)
-    if result is None:
-        return "Sorry but I couldn't find any information for that module"
-
-    module_code = result.group()
+    module_code = extract_module_code(module_code)
+    if module_code is None:
+        return "Sorry, but I couldn't find any information for that module"
 
     if activity is '':
         timetable, activity_date = get_next_activity_for_module(module_code)
@@ -134,13 +136,11 @@ def timetabling_get_next_activity_by_module(module_code, activity):
         timetable, activity_date = get_next_activity_for_module(module_code, activity=activity)
 
     # TODO specify whether the module doesn't exist or if there's no more activities
-    # & only reply with information that is there
-
     module_code = module_code.upper()
 
     if timetable is None:
         if activity is '':
-            return module_code + " doesn't have any else scheduled for the rest of the year"
+            return "It looks like " + module_code + " doesn't have any else scheduled for the rest of the year"
         else:
             return "There aren't any more " + activity + "s" + " for " + module_code
 
@@ -166,6 +166,9 @@ def timetabling_get_next_activity_by_module(module_code, activity):
         else:
             response += "."
 
+        if activity is 'assessment':
+            response += "Good luck with your assessment!"
+
         return response
 
 
@@ -178,7 +181,7 @@ def timetabling_get_next_activity_by_course(course, year, activity):
     # TODO specify whether the course doesn't exist or if there's no more activities
     if timetable is None:
         if activity is '':
-            return course + " doesn't have any else scheduled for the rest of the year"
+            return "It looks like " + course + " doesn't have any else scheduled for the rest of the year"
         else:
             return "There aren't any more " + activity + "s" + " for " + course
 
@@ -206,6 +209,9 @@ def timetabling_get_next_activity_by_course(course, year, activity):
         else:
             response += "."
 
+        if activity is 'assessment':
+            response += "Good luck with your assessment!"
+
         return response
 
 
@@ -220,7 +226,6 @@ def timetabling_get_modules_by_course(course, year):
     return response
 
 
-# 1 - 39
 def timetabling_get_week_date(week_number):
     start_date = get_date_by_week_number(int(week_number))
 
@@ -232,6 +237,56 @@ def timetabling_get_week_date(week_number):
 
 def timetabling_get_week(date):
     return "The" + ordinal_strftime(date) + " is in week " + str(get_week_number(date))
+
+
+def timetabling_get_activities_on_date(course, date, year):
+    timetables = get_activities_on_date(course, date, year)
+    response = "On " + ordinal_strftime(date) + " you have "
+    date = datetime.strptime(date, '%Y-%m-%d')
+
+    if len(timetables) == 0:
+        return "You don't have anything that day. Enjoy your day off!"
+
+    elif len(timetables) == 1:
+        timetable = timetables.get()
+        response += "a " + timetable.activity
+        response += format_activity_information(timetable, date)
+
+    else:
+        response += ": "
+
+        for timetable in timetables:
+            response += "\n"
+            response += "A " + timetable.activity.lower()
+            response += format_activity_information(timetable, date)
+
+    return response
+
+
+def format_activity_information(timetable, activity_date):
+    response = ""
+
+    response += " for " + timetable.module.name
+
+    response += " from " + timetable.start + " - " + timetable.finishes + \
+                " in room " + timetable.room
+
+    if timetable.lecturer != "" and timetable.lecturer != "-":
+        response += " with " + timetable.lecturer + "."
+    else:
+        response += "."
+
+    return response
+
+
+# Module codes have the format 1AA111
+def extract_module_code(module_code):
+    pattern = re.compile("\d\w{2}\d{3}")
+    result = pattern.search(module_code)
+    if result is None:
+        return None
+
+    return result.group()
 
 
 if __name__ == '__main__':
