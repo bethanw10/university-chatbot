@@ -54,4 +54,3 @@ def create_tables():
 
 
 print(database_path)
-create_tables()
