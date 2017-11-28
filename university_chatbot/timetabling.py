@@ -123,15 +123,14 @@ def get_modules_by_course(course, year=None):
     if year == "3" or year == "4":
         modules = modules.where(Module.code ** "6%")
 
-    print("**" + str(len(modules)) + "**")
     return modules
 
 
 def get_semester_by_module(module_code):
-    module = Module.select(Module.semester).where(Module.code == module_code.upper())
+    matching_module = Module.select(Module.semester).where(Module.code == module_code.upper())
 
-    if module.exists():
-        return module.get().semester
+    if matching_module.exists():
+        return matching_module.get().semester
 
     return None
 

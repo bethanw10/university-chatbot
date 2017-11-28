@@ -51,3 +51,7 @@ class Week_Range(BaseModel):
 def create_tables():
     db.connect()
     db.create_tables([Course, Course_Module, Module, Timetable, Week_Range])
+
+
+print(database_path)
+create_tables()

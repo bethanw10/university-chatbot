@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# TODO what date is week 12 - account for holidays?
-# Format date correctly
 import json
 import re
 
@@ -161,7 +159,7 @@ def timetabling_get_next_activity_by_module(module_code, activity):
         response += " from " + timetable.start + " - " + timetable.finishes + \
                     " in room " + timetable.room
 
-        if timetable.lecturer:
+        if timetable.lecturer != "" and timetable.lecturer != "-":
             response += " with " + timetable.lecturer + "."
         else:
             response += "."
@@ -241,7 +239,7 @@ def timetabling_get_week(date):
 
 def timetabling_get_activities_on_date(course, date, year):
     timetables = get_activities_on_date(course, date, year)
-    response = "On " + ordinal_strftime(date) + " you have "
+    response = "On " + ordinal_strftime(date) + " you have"
     date = datetime.strptime(date, '%Y-%m-%d')
 
     if len(timetables) == 0:
@@ -249,7 +247,7 @@ def timetabling_get_activities_on_date(course, date, year):
 
     elif len(timetables) == 1:
         timetable = timetables.get()
-        response += "a " + timetable.activity
+        response += " a " + timetable.activity
         response += format_activity_information(timetable, date)
 
     else:
