@@ -3,7 +3,7 @@ import os
 from peewee import *
 
 package_dir = os.path.dirname(os.path.abspath(__file__))
-database_path = os.path.join(package_dir, 'data\db.sqlite')
+database_path = os.path.join(package_dir, 'data/db.sqlite')
 db = SqliteDatabase(database_path)
 
 
@@ -54,3 +54,4 @@ def create_tables():
 
 
 print(database_path)
+print(db.get_tables())
