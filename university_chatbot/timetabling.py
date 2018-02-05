@@ -1,6 +1,7 @@
 from datetime import datetime, date, timedelta
 
 from university_chatbot import *
+from university_chatbot import models
 from university_chatbot import date_util
 
 week_one = date(2017, 9, 25)
@@ -160,3 +161,16 @@ def get_activities_on_date(course, for_date, year):
         activities = activities.where(Module.code ** "6%")
 
     return activities
+
+
+def get_modules_by_lecturer(lecturer):
+    if lecturer is None or lecturer == "":
+        return []
+
+    modules = (Module.select(Module)
+               .distinct(True)
+               .join(Timetable)
+               .where(Timetable.lecturer ** (lecturer + "%"))
+               )
+
+    return modules

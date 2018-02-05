@@ -53,5 +53,7 @@ def create_tables():
     db.create_tables([Course, Course_Module, Module, Timetable, Week_Range])
 
 
-print(database_path)
-print(db.get_tables())
+try:
+    create_tables()
+except:
+    pass
