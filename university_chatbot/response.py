@@ -1,6 +1,6 @@
 from university_chatbot import *
 import re
-import datetime.datetime
+import datetime
 
 
 # TODO add module name
@@ -44,9 +44,9 @@ def timetabling_get_next_activity_by_module(module_code, activity):
         else:
             response = "Next for " + module_code + " is the " + timetable.activity.lower()
 
-        if activity_date.date() == datetime.today().date():
+        if activity_date.date() == datetime.datetime.today().date():
             response += " today "
-        elif activity_date.date() == (datetime.today() + timedelta(days=1)).date():
+        elif activity_date.date() == (datetime.datetime.today() + timedelta(days=1)).date():
             response += " tomorrow "
         else:
             response += " on the " + ordinal_strftime(activity_date)
@@ -85,9 +85,9 @@ def timetabling_get_next_activity_by_course(course, year, activity):
         else:
             response = "Next for " + course + " is the " + timetable.activity.lower()
 
-        if activity_date.date() == datetime.today().date():
+        if activity_date.date() == datetime.datetime.today().date():
             response += " today "
-        elif activity_date.date() == (datetime.today() + timedelta(days=1)).date():
+        elif activity_date.date() == (datetime.datetime.today() + timedelta(days=1)).date():
             response += " tomorrow "
         else:
             response += " on the " + ordinal_strftime(activity_date)
