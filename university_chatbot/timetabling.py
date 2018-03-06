@@ -1,8 +1,8 @@
-from datetime import datetime, date, timedelta
 
 from university_chatbot import *
 from university_chatbot import models
 from university_chatbot import date_util
+from datetime import datetime, date, timedelta
 
 week_one = date(2017, 9, 25)
 
@@ -30,7 +30,7 @@ def get_weekday_number(day):
 
 # TODO Fix this
 def get_next_activity_date(timetable, from_date):
-    start_time = datetime.strptime(timetable.start, '%H:%M').time()
+    start_time = datetime.datetime.strptime(timetable.start, '%H:%M').time()
     weekday = get_weekday_number(timetable.day)
 
     print("Day ", from_date.weekday(), "Time", from_date.time())
@@ -42,7 +42,7 @@ def get_next_activity_date(timetable, from_date):
         day_difference = weekday - from_date.weekday()
 
     activity_date = from_date + timedelta(days=day_difference)
-    activity_date_time = datetime.combine(activity_date, start_time)
+    activity_date_time = datetime.datetime.combine(activity_date, start_time)
 
     return activity_date_time
 
@@ -93,7 +93,7 @@ def get_next_activity_for_week_ranges(week_ranges, from_date):
     if len(week_ranges) == 0:
         return None, None
 
-    earliest_activity_date = datetime.max
+    earliest_activity_date = datetime.datetime.max
     earliest_activity = Timetable()
 
     for week_range in week_ranges:
@@ -137,7 +137,7 @@ def get_semester_by_module(module_code):
 
 
 def get_activities_on_date(course, for_date, year):
-    for_date = datetime.strptime(for_date, '%Y-%m-%d')
+    for_date = datetime.datetime.strptime(for_date, '%Y-%m-%d')
     day = date_util.get_day_by_number(for_date.weekday())
 
     activities = (Timetable.select(Timetable)
@@ -161,6 +161,15 @@ def get_activities_on_date(course, for_date, year):
         activities = activities.where(Module.code ** "6%")
 
     return activities
+
+
+def get_module_name(module_code):
+    try:
+        module = Module.get(Module.code == module_code)
+        return module.name
+
+    except DoesNotExist:
+        return None
 
 
 def get_modules_by_lecturer(lecturer):

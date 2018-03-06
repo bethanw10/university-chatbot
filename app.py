@@ -53,8 +53,6 @@ def make_webhook_result(req):
     action = req.get("result").get("action")
     session = req.get("sessionId")
 
-    data = ""
-    contextOut = ""
     speech = req.get("result").get("fulfillment").get("speech")
 
     if action == 'timetabling.semester':
@@ -102,7 +100,7 @@ def make_webhook_result(req):
         for_date = req.get("result").get("parameters").get("date").strip()
 
         if for_date == "today":
-            for_date = datetime.today().date()
+            for_date = datetime.datetime.today().date()
 
         speech = timetabling_get_week(for_date)
 
@@ -149,9 +147,6 @@ def make_webhook_result(req):
         "speech": speech,
         "displayText": speech,
         "source": "apiai-university_chatbot"
-        # ,
-        # "data": data,
-        # "contextOut": contextOut
     }
 
 
