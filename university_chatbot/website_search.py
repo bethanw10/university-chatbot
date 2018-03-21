@@ -9,7 +9,12 @@ def search_uni_website(search_term):
     page = BeautifulSoup(r.text, "html.parser")
 
     search_results = page.find_all("cite")
-    links = [result["data-url"] for result in search_results]
+
+    links = []
+
+    for result in search_results:
+        if 'data-url' in result.attrs:
+            links.append(result["data-url"])
 
     if len(links) > 2:
         return links[:3]

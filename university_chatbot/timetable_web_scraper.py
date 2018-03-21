@@ -436,12 +436,7 @@ courses = {
         "8BM001", "8BM002", "8BM003", "8BM004", "8BM005", "8BM006"]
 }
 
-extra = {"BSc(Hons) Business Intelligence": [
-    "4CS001", "4CS015", "4CI018", "4CS014", "4MM015", "4CI017", "5CI021", "5CI022", "5CS030", "5CS024", "5MM014",
-    "5MM015", "6CS019", "6CS005", "6MM017", "6CS012", "6MM016"],
-    "BSc(Hons) Cloud Computing": [
-        "4CS001", "4CS015", "4CI018", "4CS014", "4CS012", "4CS016", "5CS032", "5CI022", "5CS030", "5CS022", "5CS031",
-        "5CS024", "5CS016", "6CS023", "6CS026", "6CS005", "6CS030", "6CS029"],
+extra = {
     "BSc(Hons) Computer Science":
         ["4CS001", "4CS015", "4CI018", "4CS014", "4MM013", "4CS016",
          "5CS019", "5CS021", "5CI022", "5CS022", "5CS020", "5CS024", "5CS016",
@@ -457,6 +452,7 @@ extra = {"BSc(Hons) Business Intelligence": [
          "5CS019", "5CS021", "5CI022", "5CS022", "5CS020", "5CS024",
          "5CS016", "6CS001", "6CS005", "6CS002", "6CS027", "6CS017"],
 }
+
 
 def scrape_module_timetable(module_code):
     url = "http://www3.wlv.ac.uk/timetable/testmahi2_1.asp"
@@ -609,10 +605,11 @@ def import_modules_peewee(courses):
     for course_name, module_codes in courses.items():
 
         # Save each course
-        course = Course.create(name=course_name)
+        course, _ = Course.get_or_create(name=course_name)
         print(course.name)
 
         for module_code in module_codes:
+
             module_name, timetables = scrape_module_timetable(module_code)
 
             print(module_code)
@@ -733,6 +730,31 @@ def get_timetables():
             gc.collect()
 
 
-import_modules_peewee(extra)
-get_timetables()
-print("done")
+def print_courses():
+    courses = Course.select(Course)
+
+    for course in courses:
+        print("\"" + course.name + "\",", end='')
+
+        synonym = course.name.replace("(", "").replace(")", "").strip()
+
+        print("\"" + synonym + "\",", end='')
+
+        synonym2 = synonym.replace("MEng", "").replace("BSc", "").replace("BEng", "").replace("HNC", "") \
+            .replace("HND", "") \
+            .replace("MSci", "").replace("MSc", "").replace("Hons", "").strip()
+
+        print("\"" + synonym2 + "\"")
+
+
+print_courses()
+
+# import_modules_peewee(courses)
+# import_modules_peewee(extra)
+# get_timetables()
+# print("done")
+
+# test = {"BEng (Hons) Civil and Transportation Engineering": ["4CV010"]}
+# import_modules_peewee(test)
+
+# print(get_date_by_week_number(36))

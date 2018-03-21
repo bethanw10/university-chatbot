@@ -1,21 +1,7 @@
-
 from university_chatbot import *
 from university_chatbot import models
 from university_chatbot import date_util
-from datetime import datetime, date, timedelta
-
-week_one = date(2017, 9, 25)
-
-
-def get_week_number(for_date):
-    difference = for_date - week_one
-    return (difference.days // 7) + 1
-
-
-def get_date_by_week_number(week_number, day="Monday"):
-    day_number = get_weekday_number(day)
-    start_date = week_one + timedelta(weeks=week_number - 1, days=day_number)
-    return start_date
+from datetime import datetime, timedelta
 
 
 def get_weekday_number(day):
@@ -28,9 +14,9 @@ def get_weekday_number(day):
     return days.index(day)
 
 
-# TODO Fix this
+# TODO Check this?
 def get_next_activity_date(timetable, from_date):
-    start_time = datetime.datetime.strptime(timetable.start, '%H:%M').time()
+    start_time = datetime.strptime(timetable.start, '%H:%M').time()
     weekday = get_weekday_number(timetable.day)
 
     print("Day ", from_date.weekday(), "Time", from_date.time())
@@ -42,7 +28,7 @@ def get_next_activity_date(timetable, from_date):
         day_difference = weekday - from_date.weekday()
 
     activity_date = from_date + timedelta(days=day_difference)
-    activity_date_time = datetime.datetime.combine(activity_date, start_time)
+    activity_date_time = datetime.combine(activity_date, start_time)
 
     return activity_date_time
 
@@ -79,8 +65,10 @@ def get_next_activity_for_course(course, year, from_date=datetime.now(), activit
         week_ranges = week_ranges.where(Module.code ** "4%")
     if year == "2":
         week_ranges = week_ranges.where(Module.code ** "5%")
-    if year == "3" or year == "4":
+    if year == "3":
         week_ranges = week_ranges.where(Module.code ** "6%")
+    if year == "4":
+        week_ranges = week_ranges.where(Module.code ** "7%")
 
     if activity is not None:
         week_ranges = week_ranges.where(Timetable.activity ** activity)
@@ -93,9 +81,10 @@ def get_next_activity_for_week_ranges(week_ranges, from_date):
     if len(week_ranges) == 0:
         return None, None
 
-    earliest_activity_date = datetime.datetime.max
+    earliest_activity_date = datetime.max
     earliest_activity = Timetable()
 
+    # Loop through all to find the earliest activity
     for week_range in week_ranges:
         activity_date = get_next_activity_date(week_range.timetable, from_date)
 
@@ -136,11 +125,13 @@ def get_semester_by_module(module_code):
     return None
 
 
-def get_activities_on_date(course, for_date, year):
-    for_date = datetime.datetime.strptime(for_date, '%Y-%m-%d')
+def get_activities_on_date(course, year, for_date):
+    if type(for_date) is str:
+        for_date = datetime.strptime(for_date, '%Y-%m-%d')
+
     day = date_util.get_day_by_number(for_date.weekday())
 
-    activities = (Timetable.select(Timetable)
+    activities = (Timetable.select(Timetable, Module)
                   .join(Week_Range)
                   .switch(Timetable)
                   .join(Module)
@@ -157,8 +148,24 @@ def get_activities_on_date(course, for_date, year):
         activities = activities.where(Module.code ** "4%")
     if year == "2":
         activities = activities.where(Module.code ** "5%")
-    if year == "3" or year == "4":
+    if year == "3":
         activities = activities.where(Module.code ** "6%")
+    if year == "4":
+        activities = activities.where(Module.code ** "7%")
+
+    print(activities.sql())
+
+    return activities
+
+
+def get_activities_for_date_range(course, year, start_date, end_date):
+    activities = {}
+
+    one_day = timedelta(days=1)
+
+    while start_date <= end_date:
+        activities[start_date] = get_activities_on_date(course, year, start_date)
+        start_date += one_day
 
     return activities
 
@@ -169,7 +176,7 @@ def get_module_name(module_code):
         return module.name
 
     except DoesNotExist:
-        return None
+        return ""
 
 
 def get_modules_by_lecturer(lecturer):
@@ -183,3 +190,14 @@ def get_modules_by_lecturer(lecturer):
                )
 
     return modules
+
+
+def get_lecturer_by_module(module_code):
+    timetables = Timetable.select(Timetable) \
+        .join(Module) \
+        .where(Module.code == module_code)
+
+    lecturers = [timetable.lecturer.strip() for timetable in timetables
+                 if timetable.lecturer != '-' and timetable.lecturer != '']
+
+    return list(set(lecturers))
