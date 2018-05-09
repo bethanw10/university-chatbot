@@ -78,7 +78,7 @@ def make_webhook_result(req):
         date = req.get("result").get("parameters").get('date')
         course = req.get("result").get("parameters").get('course').strip()
         year = req.get("result").get("parameters").get('year')
-        course, year = check_session_data(session, course, year)
+        # course, year = check_session_data(session, course, year)
 
         speech = timetabling_get_activities_on_date(course, year, date)
 
@@ -102,6 +102,13 @@ def make_webhook_result(req):
 
         speech = timetabling_get_week(for_date)
 
+    elif action == 'timetabling.get_week_number_period':
+        date_period = req.get("result").get("parameters").get("date-period").strip()
+
+        for_date = date_period.split("/")[0]
+
+        speech = timetabling_get_week(for_date)
+
     elif action == 'timetabling.get_module_code':
         module_param = req.get("result").get("parameters").get("module")
         module_code = extract_module_code(module_param)
@@ -119,13 +126,32 @@ def make_webhook_result(req):
         course = req.get("result").get("parameters").get('course').strip()
         year = req.get("result").get("parameters").get('year').strip()
         date_period = req.get("result").get("parameters").get('date-period').strip()
+        activity = req.get("result").get("parameters").get('activity').strip()
 
-        speech = timetable_get_timetable(course, year, date_period)
+        speech = timetable_get_timetable(course, year, date_period, activity)
 
     elif action == 'timetabling.get_lecturer':
         module_param = req.get("result").get("parameters").get('module').strip()
         module_code = extract_module_code(module_param)
         speech = timetable_get_lecturer(module_code)
+
+    elif action == 'timetabling.timetable_by_week':
+        course = req.get("result").get("parameters").get('course').strip()
+        year = req.get("result").get("parameters").get('year').strip()
+        week = req.get("result").get("parameters").get('week').strip()
+        semester = req.get("result").get("parameters").get('semester').strip()
+
+        speech = timetable_get_timetable_by_week(course, year, week, semester)
+
+    elif action == 'timetabling.get_holiday':
+        holiday = req.get("result").get("parameters").get('holiday').strip()
+        speech = timetable_get_holiday(holiday)
+
+    elif action == 'timetabling.courses':
+        speech = timetable_get_courses()
+
+    elif action == 'timetabling.semester':
+        speech = timetable_get_semester()
 
     elif action == 'input.unknown':
         message = req.get("result").get("resolvedQuery")

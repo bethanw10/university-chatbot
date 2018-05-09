@@ -14,23 +14,33 @@ def get_weekday_number(day):
     return days.index(day)
 
 
-# TODO Check this?
-def get_next_activity_date(timetable, from_date):
-    start_time = datetime.strptime(timetable.start, '%H:%M').time()
+# TODO Check this? Returns if already passed todays time
+def get_next_activity_date(week_range, from_date):
+    timetable = week_range.timetable
+    end_time = datetime.strptime(timetable.finishes, '%H:%M').time()
     weekday = get_weekday_number(timetable.day)
+    start_week = datetime.strptime(week_range.start_week, '%Y-%m-%d')
 
     print("Day ", from_date.weekday(), "Time", from_date.time())
 
-    # Check if activity has already occurred this week
-    if weekday < from_date.weekday() or (weekday == from_date.weekday() and start_time < from_date.time()):
-        day_difference = (weekday + 7) - from_date.weekday()  # Add 7 to get next weeks activity
+    # If timetable hasn't started yet
+    if start_week >= from_date:
+        activity_date = start_week + timedelta(days=weekday)
+        activity_date_time = datetime.combine(activity_date, end_time)
+
+        return activity_date_time
+
     else:
-        day_difference = weekday - from_date.weekday()
+        # Check if activity has already occurred this week
+        if weekday < from_date.weekday() or (weekday == from_date.weekday() and end_time > from_date.time()):
+            day_difference = (weekday + 7) - from_date.weekday()  # Add 7 to get next weeks activity
+        else:
+            day_difference = weekday - from_date.weekday()  # Get this week's activity
 
-    activity_date = from_date + timedelta(days=day_difference)
-    activity_date_time = datetime.combine(activity_date, start_time)
+        activity_date = from_date + timedelta(days=day_difference)
+        activity_date_time = datetime.combine(activity_date, end_time)
 
-    return activity_date_time
+        return activity_date_time
 
 
 def get_next_activity_for_module(module_code, from_date=datetime.now(), activity=None):
@@ -38,7 +48,7 @@ def get_next_activity_for_module(module_code, from_date=datetime.now(), activity
                    .join(Timetable)
                    .join(Module)
                    .where((Module.code ** module_code) &
-                          (Week_Range.start_week <= from_date.date()) &
+                          # (Week_Range.start_week <= from_date.date()) &
                           (Week_Range.end_week >= from_date.date())
                           )
                    )
@@ -56,7 +66,7 @@ def get_next_activity_for_course(course, year, from_date=datetime.now(), activit
                    .join(Course_Module)
                    .join(Course)
                    .where((Course.name ** course) &
-                          (Week_Range.start_week <= from_date.date()) &
+                          # (Week_Range.start_week <= from_date.date()) &
                           (Week_Range.end_week >= from_date.date())
                           )
                    )
@@ -73,6 +83,8 @@ def get_next_activity_for_course(course, year, from_date=datetime.now(), activit
     if activity is not None:
         week_ranges = week_ranges.where(Timetable.activity ** activity)
 
+    print(week_ranges.sql())
+
     return get_next_activity_for_week_ranges(week_ranges, from_date)
 
 
@@ -86,7 +98,7 @@ def get_next_activity_for_week_ranges(week_ranges, from_date):
 
     # Loop through all to find the earliest activity
     for week_range in week_ranges:
-        activity_date = get_next_activity_date(week_range.timetable, from_date)
+        activity_date = get_next_activity_date(week_range, from_date)
 
         if activity_date < earliest_activity_date:
             earliest_activity_date = activity_date
@@ -125,9 +137,15 @@ def get_semester_by_module(module_code):
     return None
 
 
-def get_activities_on_date(course, year, for_date):
+def get_activities_on_date(course, year, for_date, activity=''):
     if type(for_date) is str:
         for_date = datetime.strptime(for_date, '%Y-%m-%d')
+
+    if type(for_date) is datetime:
+        try:
+            for_date = for_date.date()
+        except:
+            pass
 
     day = date_util.get_day_by_number(for_date.weekday())
 
@@ -138,11 +156,14 @@ def get_activities_on_date(course, year, for_date):
                   .join(Course_Module)
                   .join(Course)
                   .where((Course.name ** course) &
-                         (Week_Range.start_week <= for_date.date()) &
-                         (Week_Range.end_week >= for_date.date()) &
+                         (Week_Range.start_week <= for_date) &
+                         (Week_Range.end_week >= for_date) &
                          (Timetable.day == day)
                          )
                   )
+
+    if activity is not '':
+        activities = activities.where(Timetable.activity ** activity)
 
     if year == "1":
         activities = activities.where(Module.code ** "4%")
@@ -153,18 +174,18 @@ def get_activities_on_date(course, year, for_date):
     if year == "4":
         activities = activities.where(Module.code ** "7%")
 
-    print(activities.sql())
+    # print(activities.sql())
 
     return activities
 
 
-def get_activities_for_date_range(course, year, start_date, end_date):
+def get_activities_for_date_range(course, year, start_date, end_date, activity=''):
     activities = {}
 
     one_day = timedelta(days=1)
 
     while start_date <= end_date:
-        activities[start_date] = get_activities_on_date(course, year, start_date)
+        activities[start_date] = get_activities_on_date(course, year, start_date, activity)
         start_date += one_day
 
     return activities

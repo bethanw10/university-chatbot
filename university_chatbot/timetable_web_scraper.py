@@ -624,14 +624,17 @@ def import_modules_peewee(courses):
             module, is_new_module = Module.get_or_create(name=module_name, code=module_code, semester=semester)
             Course_Module.create(module=module, course=course)
 
-            if not is_new_module:
-                continue
+            # if not is_new_module:
+            # continue
 
             for index, row in timetables.iterrows():
                 timetable = Timetable.create(module=module, activity=row["Activity"], day=row['Day'],
                                              start=row['Start'], finishes=row['Finishes'], campus=row['Campus'],
                                              room=row['Room'], lecturer=row['Lecturer'],
                                              group_details=row['Group/cohort details'])
+
+                # if not is_new:
+                #    continue
 
                 week_ranges = row['Weeks'].split(",")
                 day = row['Day']
@@ -655,7 +658,14 @@ def import_modules_peewee(courses):
                         week_number = int(week_range)
                         start_week = end_week = get_date_by_week_number(week_number, day)
 
-                    Week_Range.create(timetable=timetable, start_week=start_week, end_week=end_week)
+                    check = Week_Range.select().where(
+                        (
+                                Week_Range.timetable == timetable) & Week_Range.start_week == start_week & Week_Range.end_week == end_week)
+
+                    if len(check) != 0:
+                        continue
+
+                    Week_Range.get_or_create(timetable=timetable, start_week=start_week, end_week=end_week)
 
 
 def get_module_codes(url):
@@ -747,9 +757,37 @@ def print_courses():
         print("\"" + synonym2 + "\"")
 
 
-print_courses()
+def print_modules():
+    modules = Module.select(Module)
 
-# import_modules_peewee(courses)
+    miss = {"6CS005",
+            "5CS025",
+            "6CS008",
+            "6CS003",
+            "5CS027",
+            "4MM013",
+            "5CS024",
+            "6CS002",
+            "6CS007",
+            "5CS020",
+            "4CS014",
+            "5CS021",
+            "4CS001",
+            "4CI018",
+            "5CI022",
+            "5CS022",
+            "4CS016",
+            "5CS016",
+            "4CS015",
+            "5CS019"}
+
+    for module in modules:
+        if module.code not in miss:
+            print("\"" + module.code + "\",", end='')
+            print("\"" + module.name.replace("(", "").replace(")", "") + "\"")
+
+
+# import_modules_peewee({**courses, **extra})
 # import_modules_peewee(extra)
 # get_timetables()
 # print("done")
@@ -758,3 +796,5 @@ print_courses()
 # import_modules_peewee(test)
 
 # print(get_date_by_week_number(36))
+
+print(get_date_by_week_number(33))
