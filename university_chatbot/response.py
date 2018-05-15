@@ -6,14 +6,14 @@ import datetime
 def timetabling_get_semester(module_code):
     module_code = extract_module_code(module_code)
     if module_code is None:
-        return "Sorry but I couldn't find any information for that module"
+        return "Sorry but I couldn't find any information for that module. Module codes are case sensitive."
 
     semester = get_semester_by_module(module_code)
 
     if semester is None:
         return "Sorry, but I couldn't find any information for " + module_code.upper()
     else:
-        module_name = get_module_name(module_code)
+        module_name = get_module_name(module_code.upper())
 
         if semester == "Year Long":
             return module_code.upper() + " " + module_name + " is a year long module."
@@ -73,6 +73,9 @@ def timetabling_get_next_activity_by_module(module_code, activity):
 
 
 def timetabling_get_next_activity_by_course(course_name, year, activity):
+    if year not in ['1', '2', '3', '4']:
+        return "Year must be between 1 and 3"
+
     if activity is '':
         timetable, activity_date = get_next_activity_for_course(course_name, year)
     else:
@@ -145,6 +148,8 @@ def timetabling_get_week_date(week_number, semester):
 
 
 def timetabling_get_week(for_date):
+    for_date = get_uni_date(for_date)
+
     is_holiday, holiday = is_date_in_holiday(for_date)
 
     if is_holiday:
@@ -162,17 +167,20 @@ def timetabling_get_week(for_date):
 
 
 def timetabling_get_activities_on_date(course, year, for_date):
+    if year not in ['1', '2', '3', '4']:
+        return "Year must be between 1 and 3"
+
+    for_date = get_uni_date(for_date)
+
     timetables = get_activities_on_date(course, year, for_date)
 
-    for_date = datetime.datetime.strptime(for_date, '%Y-%m-%d')
-
-    if for_date > datetime.datetime.today():
+    if for_date > datetime.datetime.today().date():
         response = "On " + ordinal_strftime(for_date) + " you have"
     else:
         response = "On " + ordinal_strftime(for_date) + " you had"
 
     if len(timetables) == 0:
-        return "You don't have anything that day. Enjoy your day off!"
+        return "You don't have anything that day! :)"
 
     elif len(timetables) == 1:
         timetable = timetables.get()
@@ -191,6 +199,9 @@ def timetabling_get_activities_on_date(course, year, for_date):
 
 
 def timetable_get_modules_by_lecturer(lecturer):
+    if lecturer == "":
+        return "I couldn't find any information for that lecturer"
+
     modules = get_modules_by_lecturer(lecturer)
     response = lecturer + " teaches: \n"
 
@@ -204,6 +215,9 @@ def timetable_get_modules_by_lecturer(lecturer):
 
 
 def timetable_get_timetable(course, year, time_period, activity):
+    if year not in ['1', '2', '3', '4']:
+        return "Year must be between 1 and 3"
+
     if time_period == '':
         start_date = datetime.datetime.today()
         end_date = start_date + timedelta(days=7)
@@ -212,8 +226,12 @@ def timetable_get_timetable(course, year, time_period, activity):
 
     else:
         start_and_end = time_period.split("/")
+
         start_date = datetime.datetime.strptime(start_and_end[0], '%Y-%m-%d')
+        # start_date = get_uni_date(start_date)
+
         end_date = datetime.datetime.strptime(start_and_end[1], '%Y-%m-%d')
+        #end_date = get_uni_date(end_date)
 
         if end_date > start_date + timedelta(days=365):
             end_date = start_date + timedelta(days=365)
@@ -234,6 +252,16 @@ def timetable_get_timetable(course, year, time_period, activity):
 
 
 def timetable_get_timetable_by_week(course, year, week, semester):
+    if year not in ['1', '2', '3', '4']:
+        return "Year must be between 1 and 3"
+
+    if not 1 <= int(week) <= 15:
+        return "There isn't a week " + week + ", the weeks start at 1 and end at 15"
+
+    if semester is not '':
+        if not 1 <= int(semester) <= 3:
+            return "There isn't a semester " + semester + ", there are only 3 semesters"
+
     response = "Your timetable for Week " + str(week) + " is:\n"
 
     start_date = get_date_by_week_number(int(week), semester, "Monday")
@@ -255,7 +283,7 @@ def timetable_get_lecturer(module_code):
     lecturers = get_lecturer_by_module(module_code)
 
     if len(lecturers) == 0:
-        return "I couldn't find any lecturer details for that module code"
+        return "I couldn't find any lecturer details for that module code. Module codes are case sensitive"
     elif len(lecturers) == 1:
         return "The lecturer for " + get_module_name(module_code) + " is " + lecturers[0]
     else:
@@ -299,11 +327,16 @@ def timetable_get_semester_end():
 def timetable_get_semester():
     semester = get_current_semester()
 
-    return "We're in semester " + semester + "."
+    return "We're in semester " + str(semester) + "."
 
 
 # Module codes have the format 0AA000
 def extract_module_code(module_code):
+    module_code = module_code.replace("?", "")
+
+    if module_code is None:
+        return None
+
     pattern = re.compile("\d\w{2}\d{3}")
     result = pattern.search(module_code)
     if result is None:
@@ -331,6 +364,7 @@ def format_activity_information(timetable):
     return response
 
 
+# Returns description of timetable
 def format_timetable(timetable):
     response = ""
 

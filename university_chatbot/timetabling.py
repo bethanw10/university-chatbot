@@ -14,7 +14,6 @@ def get_weekday_number(day):
     return days.index(day)
 
 
-# TODO Check this? Returns if already passed todays time
 def get_next_activity_date(week_range, from_date):
     timetable = week_range.timetable
     end_time = datetime.strptime(timetable.finishes, '%H:%M').time()
@@ -173,8 +172,6 @@ def get_activities_on_date(course, year, for_date, activity=''):
         activities = activities.where(Module.code ** "6%")
     if year == "4":
         activities = activities.where(Module.code ** "7%")
-
-    # print(activities.sql())
 
     return activities
 

@@ -18,6 +18,7 @@ def suffix(day):
         return suffixes.get(day % 10, 'th')
 
 
+# Returns date in the format of 1st of January 2018
 def ordinal_strftime(t):
     if type(t) is str:
         t = datetime.strptime(t, '%Y-%m-%d').date()
@@ -59,7 +60,6 @@ def get_date_by_week_number(week_number, semester='', day="Monday"):
     return start_date
 
 
-# TODO: Should probably do this a better way?
 def is_date_past_holiday(semester, for_date):
     if semester == 1:
         return for_date > holidays["Christmas Break"][0]
@@ -80,6 +80,7 @@ def get_current_semester():
         return 3
 
 
+# Returns 'day number' where Monday is 0 and Sunday is 6
 def get_day_by_number(number):
     days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     return days[number]
@@ -88,6 +89,8 @@ def get_day_by_number(number):
 def get_week_number(for_date):
     if type(for_date) is str:
         for_date = datetime.strptime(for_date, '%Y-%m-%d').date()
+
+    for_date = get_uni_date(for_date)
 
     if for_date < semester_2_week_1:
         difference = for_date - semester_1_week_1
@@ -105,6 +108,22 @@ def get_week_number(for_date):
         week_number -= 2
 
     return semester, week_number
+
+
+def get_uni_date(for_date):
+    if type(for_date) is str:
+        for_date = datetime.strptime(for_date, '%Y-%m-%d').date()
+
+    # Temp work around - treat every academic year as if it is this year
+    if for_date.month >= semester_1_week_1.month and for_date.day >= semester_1_week_1.day:
+        for_date = for_date.replace(year=2017)
+    else:
+        if for_date.month == 2 and for_date.day == 29:
+            for_date = for_date.replace(day=28)
+
+        for_date = for_date.replace(year=2018)
+
+    return for_date
 
 
 def is_date_in_holiday(for_date):

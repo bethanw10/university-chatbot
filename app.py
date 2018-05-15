@@ -7,11 +7,8 @@ from flask import request
 
 from university_chatbot import *
 
-session_data = {}
-
 # Flask app should start in global layout
 app = Flask(__name__)
-
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -37,25 +34,11 @@ def get_request():
     print(json.dumps(req, indent=4))
 
 
-def check_session_data(session, course, year):
-    if course is None or year is None:
-        if session not in session_data:
-            return session_data[session]
-        else:
-            return "", ""
-    else:
-        if session not in session_data:
-            session_data[session] = (course, year)
-        return course, year
-
-
 def make_webhook_result(req):
     action = req.get("result").get("action")
-    session = req.get("sessionId")
-
     speech = req.get("result").get("fulfillment").get("speech")
 
-    if action == 'timetabling.semester':
+    if action == 'timetabling.module_semester':
         module_code = req.get("result").get("parameters").get('module')
 
         speech = timetabling_get_semester(module_code)
@@ -70,7 +53,6 @@ def make_webhook_result(req):
         course = req.get("result").get("parameters").get('course').strip()
         year = req.get("result").get("parameters").get('year').strip()
         activity = req.get("result").get("parameters").get('activity').strip()
-        # course, year = check_session_data(session, course, year)
 
         speech = timetabling_get_next_activity_by_course(course, year, activity)
 
@@ -78,14 +60,12 @@ def make_webhook_result(req):
         date = req.get("result").get("parameters").get('date')
         course = req.get("result").get("parameters").get('course').strip()
         year = req.get("result").get("parameters").get('year')
-        # course, year = check_session_data(session, course, year)
 
         speech = timetabling_get_activities_on_date(course, year, date)
 
     elif action == 'timetabling.get_course_modules':
         course = req.get("result").get("parameters").get('course').strip()
         year = req.get("result").get("parameters").get('year').strip()
-        # course, year = check_session_data(session, course, year)
 
         speech = timetabling_get_modules_by_course(course, year)
 

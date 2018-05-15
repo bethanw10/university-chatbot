@@ -16,6 +16,7 @@ def search_uni_website(search_term):
         if 'data-url' in result.attrs:
             links.append(result["data-url"])
 
+    # Return a maximum of 3 links
     if len(links) > 2:
         return links[:3]
 
